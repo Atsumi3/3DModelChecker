@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+    <script src="js/third/inflate.min.js"></script>
+    <script src="js/three.js"></script>
+    <script src="js/controls/OrbitControls.js"></script>
+    <script src="js/loaders/FBXLoader.js"></script>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+<script>
+    let container, stats, controls;
+    let camera, scene, renderer, light;
+
+    init();
+    animate();
+
+    /*
+    1. ファイルを開く
+    2. ファイルを一時フォルダに保存する
+    3. 読み込んで表示する
+    -----
+    4. マテリアル一覧を表示する
+    5. テクスチャを貼り付けられるようにする
+     */
+
+    function init() {
+        const groundColor = 0xFFFFFF;
+
+
+        container = document.createElement('div');
+        document.body.appendChild(container);
+
+        /* 遠近感カメラ
+         - 視野角
+         - アスペクト比
+         - near 最近接面
+         - far  最遠面
+         */
+        camera = new THREE.PerspectiveCamera(
+            45,
+            window.innerWidth / window.innerHeight,
+            1,
+            3000
+        );
+        camera.position.set(100, 200, 300);
+
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xa0a0a0);
+        // scene.fog = new THREE.Fog(0xa0a0a0, 200, 1000);
+
+        /* 半球光源 https://matorel.com/archives/539
+        - 空の色
+        - 大地の色
+        - 強さ
+         */
+        light = new THREE.HemisphereLight(0xffffff, groundColor);
+        light.position.set(0, 200, 0);
+        scene.add(light);
+
+        /* 平行光源 https://matorel.com/archives/519
+        - 色
+         */
+        light = new THREE.DirectionalLight(0xffffff);
+        light.position.set(0, 200, 100);
+        light.castShadow = true;
+        light.shadow.camera.top = 180;
+        light.shadow.camera.bottom = -100;
+        light.shadow.camera.left = -120;
+        light.shadow.camera.right = 120;
+        scene.add(light);
+
+        // ground
+        const mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000), new THREE.MeshPhongMaterial({
+            color: groundColor,
+            depthWrite: false
+        }));
+        mesh.rotation.x = -Math.PI / 2;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+
+        const grid = new THREE.GridHelper(2000, 20, 0x000000, 0x000000);
+        grid.material.opacity = 0.2;
+        grid.material.transparent = true;
+        scene.add(grid);
+
+        // model
+        const loader = new THREE.FBXLoader();
+        loader.load('soramaru.fbx', function (object) {
+            scene.add(object);
+        });
+
+        // renderer
+        renderer = new THREE.WebGLRenderer( { antialias: true } );
+        renderer.setPixelRatio( window.devicePixelRatio );
+        renderer.setSize( window.innerWidth, window.innerHeight );
+        renderer.shadowMap.enabled = true;
+        container.appendChild( renderer.domElement );
+
+        controls = new THREE.OrbitControls( camera, renderer.domElement );
+        controls.target.set( 0, 100, 0 );
+        controls.update();
+
+        window.addEventListener( 'resize', onWindowResize, false );
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize( window.innerWidth, window.innerHeight );
+    }
+
+    function animate() {
+        requestAnimationFrame(animate);
+        renderer.render(scene, camera);
+    }
+</script>
+</body>
+</html>
