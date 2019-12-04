@@ -45,7 +45,6 @@ THREE.FBXLoader = ( function () {
 			loader.setResponseType( 'arraybuffer' );
 
 			loader.load( url, function ( buffer ) {
-				console.log(path);
 				try {
 
 					onLoad( self.parse( buffer, path ) );
