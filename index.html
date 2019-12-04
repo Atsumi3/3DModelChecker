@@ -12,7 +12,6 @@
         body {
             margin: 0;
         }
-
         canvas {
             width: 100%;
             height: 100%;
@@ -20,12 +19,121 @@
     </style>
 </head>
 <body>
+<input type="file" name="filenya" id="fbx_upload">
+<div id="textures_upload_area"></div>
 <script>
     let container, stats, controls;
     let camera, scene, renderer, light;
 
-    init();
-    animate();
+    // noinspection ES6ConvertVarToLetConst
+    var loadedModel;
+
+    initThreeJS();
+    setupUploadFBXButton();
+    render();
+
+    /// FBX をアップロードするボタンの設定
+    function setupUploadFBXButton() {
+        const file = document.getElementById('fbx_upload');
+        if(window.File && window.FileReader && window.FileList && window.Blob) {
+            function onLoadLocalFBX(e) {
+                const fileData = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function() {
+                    onLoadFBX(reader.result);
+                };
+                reader.readAsArrayBuffer(fileData);
+            }
+            file.addEventListener('change', onLoadLocalFBX, false);
+        } else {
+            file.style.display = 'none';
+            alert("現在のブラウザでは利用できません")
+        }
+    }
+
+    // FBX がアップロードされた後の処理
+    function onLoadFBX(base64) {
+        const loader = new THREE.FBXLoader();
+        loadedModel = loader.parse(base64, './');
+        scene.add(loadedModel);
+
+        for (let i = 0; i < loadedModel.children.length; i++) {
+            const child = loadedModel.children[i];
+            if (child.type === "SkinnedMesh") {
+                setupUploadTextureButton(child.id);
+            }
+        }
+    }
+
+    function onLoadTextureByFileAPI(e) {
+        const textureId = e.target.name;
+        const fileData = e.target.files[0];
+        if(!fileData.type.match('image.*')) {
+            alert('画像を選択してください');
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = function() {
+            onLoadTexture(reader.result, textureId);
+        };
+        reader.readAsDataURL(fileData);
+    }
+
+    function setupUploadTextureButton(textureId) {
+        const textures_upload_area = document.getElementById('textures_upload_area');
+        const inputArea = document.createElement("input");
+        // TODO input の続き
+        if(window.File && window.FileReader && window.FileList && window.Blob) {
+            textures_upload_area.addEventListener('change', onLoadTextureByFileAPI, false);
+        } else {
+            textures_upload_area.style.display = 'none';
+            alert("現在のブラウザでは利用できません")
+        }
+    }
+
+    function onLoadTexture(base64, textureId) {
+        if (loadedModel == null) {
+            return
+        }
+        loadTextureFromBase64(base64, function (texture) {
+            for (let i = 0; i < loadedModel.children.length; i++) {
+                const child = loadedModel.children[i];
+                if (child.type === "SkinnedMesh" && child.id === textureId) {
+                    child.map = texture;
+                }
+            }
+        });
+    }
+
+    function loadTexture(path, callback) {
+        const loader = new THREE.TextureLoader();
+        loader.load(path, function (texture) {
+            callback(texture);
+        });
+    }
+
+    function loadTextureFromBase64(base64Image, callback) {
+        const image = new Image();
+        image.src = base64Image;
+        const texture = new THREE.Texture();
+        texture.image = image;
+        image.onload = function () {
+            texture.needsUpdate = true;
+            callback(texture);
+        };
+    }
+
+    function loadModel(path, callback) {
+        const loader = new THREE.FBXLoader();
+        loader.load(path, function (object) {
+            callback(object);
+        });
+    }
+
+    function loadModelFromBase64(base64File, callback) {
+        const loader = new THREE.FBXLoader();
+        callback(loader.parse(base64File, './'));
+    }
 
     /*
     1. ファイルを開く
@@ -36,9 +144,8 @@
     5. テクスチャを貼り付けられるようにする
      */
 
-    function init() {
+    function initThreeJS() {
         const groundColor = 0xFFFFFF;
-
 
         container = document.createElement('div');
         document.body.appendChild(container);
@@ -66,41 +173,35 @@
         - 大地の色
         - 強さ
          */
-        light = new THREE.HemisphereLight(0xffffff, groundColor);
-        light.position.set(0, 200, 0);
-        scene.add(light);
+        // light = new THREE.HemisphereLight(0xffffff, groundColor);
+        // light.position.set(0, 200, 0);
+        // scene.add(light);
 
         /* 平行光源 https://matorel.com/archives/519
         - 色
          */
-        light = new THREE.DirectionalLight(0xffffff);
-        light.position.set(0, 200, 100);
-        light.castShadow = true;
-        light.shadow.camera.top = 180;
-        light.shadow.camera.bottom = -100;
-        light.shadow.camera.left = -120;
-        light.shadow.camera.right = 120;
-        scene.add(light);
+        // light = new THREE.DirectionalLight(0xffffff);
+        // light.position.set(0, 200, 100);
+        // light.castShadow = true;
+        // light.shadow.camera.top = 180;
+        // light.shadow.camera.bottom = -100;
+        // light.shadow.camera.left = -120;
+        // light.shadow.camera.right = 120;
+        // scene.add(light);
 
         // ground
-        const mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000), new THREE.MeshPhongMaterial({
-            color: groundColor,
-            depthWrite: false
-        }));
-        mesh.rotation.x = -Math.PI / 2;
-        mesh.receiveShadow = true;
-        scene.add(mesh);
-
-        const grid = new THREE.GridHelper(2000, 20, 0x000000, 0x000000);
-        grid.material.opacity = 0.2;
-        grid.material.transparent = true;
-        scene.add(grid);
-
-        // model
-        const loader = new THREE.FBXLoader();
-        loader.load('soramaru.fbx', function (object) {
-            scene.add(object);
-        });
+        // const mesh = new THREE.Mesh(new THREE.PlaneBufferGeometry(2000, 2000), new THREE.MeshPhongMaterial({
+        //     color: groundColor,
+        //     depthWrite: false
+        // }));
+        // mesh.rotation.x = -Math.PI / 2;
+        // mesh.receiveShadow = true;
+        // scene.add(mesh);
+        //
+        // const grid = new THREE.GridHelper(2000, 20, 0x000000, 0x000000);
+        // grid.material.opacity = 0.2;
+        // grid.material.transparent = true;
+        // scene.add(grid);
 
         // renderer
         renderer = new THREE.WebGLRenderer( { antialias: true } );
@@ -122,8 +223,8 @@
         renderer.setSize( window.innerWidth, window.innerHeight );
     }
 
-    function animate() {
-        requestAnimationFrame(animate);
+    function render() {
+        requestAnimationFrame(render);
         renderer.render(scene, camera);
     }
 </script>

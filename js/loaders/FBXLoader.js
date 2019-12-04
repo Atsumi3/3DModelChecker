@@ -36,7 +36,6 @@ THREE.FBXLoader = ( function () {
 		constructor: FBXLoader,
 
 		load: function ( url, onLoad, onProgress, onError ) {
-
 			var self = this;
 
 			var path = ( self.path === '' ) ? THREE.LoaderUtils.extractUrlBase( url ) : self.path;
@@ -46,7 +45,7 @@ THREE.FBXLoader = ( function () {
 			loader.setResponseType( 'arraybuffer' );
 
 			loader.load( url, function ( buffer ) {
-
+				console.log(path);
 				try {
 
 					onLoad( self.parse( buffer, path ) );
