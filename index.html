@@ -9,13 +9,18 @@
     <script src="js/controls/OrbitControls.js"></script>
     <script src="js/loaders/FBXLoader.js"></script>
     <style>
-        body {
-            margin: 16px;
-            padding: 0;
+        * {
+            margin: 0;
             overflow: hidden;
         }
+        html, body {
+            margin: 16px;
+            height: 100%;
+            padding: 0;
+        }
         #viewer {
-            width: 50%;
+            width: 100%;
+            height: 90%;
         }
     </style>
 </head>
@@ -200,18 +205,16 @@
         const groundColor = 0xFFFFFF;
         container = document.getElementById('viewer');
 
+        const wid = container.clientWidth;
+        const hei = container.clientHeight;
+
         /* 遠近感カメラ
          - 視野角
          - アスペクト比
          - near 最近接面
          - far  最遠面
          */
-        camera = new THREE.PerspectiveCamera(
-            45,
-            window.innerWidth / window.innerHeight,
-            1,
-            4000
-        );
+        camera = new THREE.PerspectiveCamera(45, wid / hei, 1, 4000);
         camera.position.set(100, 200, 300);
 
         scene = new THREE.Scene();
@@ -260,7 +263,7 @@
         // renderer
         renderer = new THREE.WebGLRenderer( { antialias: true } );
         renderer.setPixelRatio( window.devicePixelRatio );
-        renderer.setSize( container.clientWidth, container.clientWidth );
+        renderer.setSize(wid, hei);
         renderer.shadowMap.enabled = true;
         container.appendChild( renderer.domElement );
 
@@ -272,10 +275,14 @@
     }
 
     function onWindowResize() {
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize( container.clientWidth, container.clientWidth );
+        container = document.getElementById('viewer');
+        const wid = container.clientWidth;
+        const hei = container.clientHeight;
 
-        camera.aspect = window.innerWidth / window.innerHeight;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(wid, hei);
+
+        camera.aspect = wid / hei;
         camera.updateProjectionMatrix();
     }
 
